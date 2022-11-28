@@ -137,7 +137,7 @@ fn main() {
                 log_info.as_mut_ptr() as *mut i8,
             );
             log_info.set_len(log_len as usize);
-            error!("Failed to link VERTEX shader:\n{}", String::from_utf8_lossy(&log_info));
+            error!("Failed to compile VERTEX shader:\n{}", String::from_utf8_lossy(&log_info));
         }
 
         // Fragment shader
@@ -162,7 +162,7 @@ fn main() {
                 log_info.as_mut_ptr() as *mut i8,
             );
             log_info.set_len(log_len as usize);
-            error!("Failed to link FRAGMENT shader:\n{}", String::from_utf8_lossy(&log_info));
+            error!("Failed to compile FRAGMENT shader:\n{}", String::from_utf8_lossy(&log_info));
         }
     
         // Link shader program
