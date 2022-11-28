@@ -1,0 +1,27 @@
+2022-11-27T15:51:27 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T16:29:15 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T16:29:46 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T16:30:04 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T16:32:06 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T16:32:47 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T16:33:55 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T16:43:21 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T16:44:21 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T16:44:59 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T16:45:28 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-27T20:05:55 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-28T02:21:03 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-28T02:21:03 fenix [ERROR] Failed to compile VERTEX shader!
+2022-11-28T02:21:03 fenix [ERROR] 0:4(2): error: `gl_position' undeclared
+0:4(2): error: value of type vec4 cannot be assigned to variable of type error
+
+2022-11-28T02:21:03 fenix [ERROR] Failed to link PROGRAM shader!
+2022-11-28T02:21:03 fenix [ERROR] error: linking with uncompiled/unspecialized shader
+2022-11-28T02:24:24 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"
+2022-11-28T02:24:24 fenix [ERROR] Failed to link VERTEX shader:
+0:4(2): error: `gl_position' undeclared
+0:4(2): error: value of type vec4 cannot be assigned to variable of type error
+
+2022-11-28T02:24:24 fenix [ERROR] Failed to link PROGRAM shader:
+error: linking with uncompiled/unspecialized shader
+2022-11-28T02:25:45 fenix [INFO] GLFW version: "3.3.5 X11 GLX EGL OSMesa clock_gettime evdev"

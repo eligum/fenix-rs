@@ -1,0 +1,17 @@
+[workspace]
+members = [
+  "fenix-core",
+  "fenix-app",
+]
+
+default-members = [
+  "fenix-app"
+]
+
+[profile.release]
+lto = "thin"
+
+[profile.opt]
+inherits = "release"
+lto = "fat"
+opt-level = 3

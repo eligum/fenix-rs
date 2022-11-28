@@ -1,0 +1,22 @@
+[package]
+name = "fenix-app"
+version = "0.1.0"
+description = "OpenGL based graphics framework."
+authors = ["Miguel García Soler"]
+edition = "2021"
+
+[[bin]]
+name = "fenix"
+path = "src/main.rs"
+
+[dependencies]
+fenix-core = { path = "../fenix-core" }
+
+gl = "0.6.0"        # OpenGL bindings
+glam = "0.22.0"     # Math library
+glfw = "0.45.0"     # Window and OpenGL context
+image = "0.24.5"    # Image parser
+chrono = "0.4.23"   # Date and time
+bytemuck = "1.12.3" # Type casts
+log = "0.4.17"      # Logging API
+
