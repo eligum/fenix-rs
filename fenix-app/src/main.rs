@@ -1,10 +1,11 @@
 // #![allow(unused_imports)]
 
+use core::ffi::c_void;
 use fenix_core::logging::setup_logging;
+use fenix_renderer::shader::ShaderProgram;
 use glfw::{Action, Context, Key};
 use log::{error, info, warn, LevelFilter};
-use std::mem::{size_of_val, size_of};
-use std::os::raw::c_void;
+use std::mem::{size_of, size_of_val};
 
 fn main() {
     setup_logging("fenix.log", LevelFilter::Info).expect("failed to initialize logging");
@@ -15,7 +16,9 @@ fn main() {
 
     glfw.window_hint(glfw::WindowHint::ContextVersion(4, 5));
     glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
-    glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
+    glfw.window_hint(glfw::WindowHint::OpenGlProfile(
+        glfw::OpenGlProfileHint::Core,
+    ));
     glfw.window_hint(glfw::WindowHint::Resizable(true));
 
     let (mut window, events) = glfw
@@ -100,97 +103,14 @@ fn main() {
         );
         gl::EnableVertexAttribArray(0);
     }
-    
-    const VERT_SHADER: &str = r#"#version 450 core
-        layout (location = 0) in vec3 a_pos;
-        void main() {
-            gl_Position = vec4(a_pos, 1.0);
-        }
-    "#;
-    const FRAG_SHADER: &str = r#"#version 450 core
-        out vec4 frag_color;
-        void main() {
-            frag_color = vec4(1.0, 0.5, 0.0, 1.0);
-        }
-    "#;
-    
-    unsafe {
-        // Vertex shader
-        let vert_id = gl::CreateShader(gl::VERTEX_SHADER);
-        gl::ShaderSource(
-            vert_id,
-            1,
-            &(VERT_SHADER.as_bytes().as_ptr() as *const i8),
-            &(VERT_SHADER.len() as i32),
-        );
-        gl::CompileShader(vert_id);
-        let mut success = 0;
-        gl::GetShaderiv(vert_id, gl::COMPILE_STATUS, &mut success);
-        if success == 0 {
-            let buf_size = 1024;
-            let mut log_info: Vec<u8> = Vec::with_capacity(buf_size);
-            let mut log_len: i32 = 0;
-            gl::GetShaderInfoLog(
-                vert_id,
-                buf_size as i32,
-                &mut log_len,
-                log_info.as_mut_ptr() as *mut i8,
-            );
-            log_info.set_len(log_len as usize);
-            error!("Failed to compile VERTEX shader:\n{}", String::from_utf8_lossy(&log_info));
-        }
 
-        // Fragment shader
-        let frag_id = gl::CreateShader(gl::FRAGMENT_SHADER);
-        gl::ShaderSource(
-            frag_id,
-            1,
-            &(FRAG_SHADER.as_bytes().as_ptr() as *const i8),
-            &(FRAG_SHADER.len() as i32),
-        );
-        gl::CompileShader(frag_id);
-        let mut success = 0;
-        gl::GetShaderiv(frag_id, gl::COMPILE_STATUS, &mut success);
-        if success == 0 {
-            let buf_size = 1024;
-            let mut log_info: Vec<u8> = Vec::with_capacity(buf_size);
-            let mut log_len: i32 = 0;
-            gl::GetShaderInfoLog(
-                frag_id,
-                buf_size as i32,
-                &mut log_len,
-                log_info.as_mut_ptr() as *mut i8,
-            );
-            log_info.set_len(log_len as usize);
-            error!("Failed to compile FRAGMENT shader:\n{}", String::from_utf8_lossy(&log_info));
-        }
-    
-        // Link shader program
-        let program_id = gl::CreateProgram();
-        gl::AttachShader(program_id, vert_id);
-        gl::AttachShader(program_id, frag_id);
-        gl::LinkProgram(program_id);
-        let mut success = 0;
-        gl::GetProgramiv(program_id, gl::LINK_STATUS, &mut success);
-        if success == 0 {
-            let buf_size = 1024;
-            let mut log_info: Vec<u8> = Vec::with_capacity(buf_size);
-            let mut log_len: i32 = 0;
-            gl::GetProgramInfoLog(
-                program_id,
-                buf_size as i32,
-                &mut log_len,
-                log_info.as_mut_ptr() as *mut i8,
-            );
-            log_info.set_len(log_len as usize);
-            error!("Failed to link PROGRAM shader:\n{}", String::from_utf8_lossy(&log_info));
-        }
-        gl::UseProgram(program_id); // TODO: Move this closer to the draw call
-        
-        // Delete shader source from GPU memory
-        gl::DeleteShader(vert_id);
-        gl::DeleteShader(frag_id);
-    }
+    let program = ShaderProgram::from_file("assets/shader.vert", "assets/shader.frag", None)
+        .unwrap_or_else(|err| {
+            error!("{}", err);
+            warn!("Using empty ShaderProgram");
+            ShaderProgram::new().unwrap()
+        });
+    program.bind();
 
     unsafe {
         gl::Viewport(0, 0, 1280, 720);
@@ -204,7 +124,7 @@ fn main() {
 
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT);
-            
+
             gl::BindVertexArray(vao);
             gl::DrawArrays(gl::TRIANGLES, 0, 36);
             gl::BindVertexArray(0);

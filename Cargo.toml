@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "fenix-core",
+  "fenix-renderer",
   "fenix-app",
 ]
 
