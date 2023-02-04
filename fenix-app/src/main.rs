@@ -118,6 +118,8 @@ fn main() {
     }
 
     while !window.should_close() {
+        // Poll for and process events
+        glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
             handle_window_event(&mut window, event);
         }
@@ -126,13 +128,12 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
             gl::BindVertexArray(vao);
-            gl::DrawArrays(gl::TRIANGLES, 0, 36);
+            gl::DrawArrays(gl::TRIANGLES, 0, VERTICES.len() as i32);
             gl::BindVertexArray(0);
         }
 
-        // Swap buffers and poll IO events
+        // Swap front and back buffers
         window.swap_buffers();
-        glfw.poll_events();
     }
 }
 

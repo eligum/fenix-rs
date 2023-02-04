@@ -2,7 +2,7 @@ use fern::colors::{Color, ColoredLevelConfig};
 use chrono;
 use log::LevelFilter;
 
-/// Initializes the logging backend. After this, logging output is sent to `stdout`
+/// Initializes the logging backend. After this, log output is sent to `stdout`
 /// and the file specified by `logfile`.
 pub fn setup_logging(logfile: &str, level: LevelFilter) -> Result<(), fern::InitError> {
     let base_config = fern::Dispatch::new()
@@ -31,7 +31,7 @@ pub fn setup_logging(logfile: &str, level: LevelFilter) -> Result<(), fern::Init
         .format(move |out, message, record| {
             out.finish(format_args!(
                 "{} {} [{}] {}",
-                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                chrono::Local::now().format("%H:%M:%S"),
                 record.target(),
                 palette.color(record.level()),
                 message

@@ -1,12 +1,14 @@
 //! TODO: Add module documentation when this project grows.
 
 use gl;
-use std::fs;
+use glam::{Mat3, Mat4, Vec2, Vec3, Vec4};
+use log::error;
+use std::{collections::HashMap, fs};
 
 /// The types of shader.
 #[derive(Clone, Copy, Debug)]
 #[repr(u32)]
-pub enum ShaderType {
+enum ShaderType {
     Vertex = gl::VERTEX_SHADER,
     Fragment = gl::FRAGMENT_SHADER,
     Geometry = gl::GEOMETRY_SHADER,
@@ -24,7 +26,7 @@ impl Shader {
     ///
     /// Possibly skip the direct creation of the shader object and use
     /// [`ShaderProgram::from_vert_frag`](ShaderProgram::from_vert_frag).
-    pub fn new(st: ShaderType) -> Option<Self> {
+    fn new(st: ShaderType) -> Option<Self> {
         let shader_id = unsafe { gl::CreateShader(st as u32) };
         if shader_id != 0 {
             Some(Self { id: shader_id })
@@ -36,7 +38,7 @@ impl Shader {
     /// Assigns a source string to the shader.
     ///
     /// Replaces any previously assigned source.
-    pub fn set_source(&self, src: &str) {
+    fn set_source(&self, src: &str) {
         unsafe {
             gl::ShaderSource(
                 self.id,
@@ -48,19 +50,19 @@ impl Shader {
     }
 
     /// Compiles the shader based on the assigned source.
-    pub fn compile(&self) {
+    fn compile(&self) {
         unsafe { gl::CompileShader(self.id) };
     }
 
     /// Checks if the last compile was successful or not.
-    pub fn is_successfully_compiled(&self) -> bool {
+    fn is_successfully_compiled(&self) -> bool {
         let mut compiled = 0;
         unsafe { gl::GetShaderiv(self.id, gl::COMPILE_STATUS, &mut compiled) };
         compiled == gl::TRUE as i32
     }
 
     /// Gets the info log for the shader.
-    pub fn get_info_log(&self) -> String {
+    fn get_info_log(&self) -> String {
         let mut buffer_len = 0;
         unsafe { gl::GetShaderiv(self.id, gl::INFO_LOG_LENGTH, &mut buffer_len) };
         let mut info_log: Vec<u8> = Vec::with_capacity(buffer_len as usize);
@@ -82,12 +84,12 @@ impl Shader {
     /// Note: This **does not** immediately delete the shader. It only marks it for
     /// deletion. If the shader has been previously attached to a program then the
     /// shader will stay allocated until it's unattached from that program.
-    pub fn delete(self) {
+    fn delete(self) {
         unsafe { gl::DeleteShader(self.id) };
     }
 
     /// Creates and compiles a shader of the given type from source.
-    pub fn from_source(st: ShaderType, source: &str) -> Result<Self, String> {
+    fn from_source(st: ShaderType, source: &str) -> Result<Self, String> {
         let shader = Self::new(st).ok_or_else(|| String::from("Couldn't allocate new shader"))?;
         shader.set_source(source);
         shader.compile();
@@ -106,9 +108,11 @@ impl Shader {
     }
 }
 
-/// A handle to a [Program Object](https://www.khronos.org/opengl/wiki/GLSL_Object#Program_objects)
+/// A handle to a [`Program Object`](https://www.khronos.org/opengl/wiki/GLSL_Object#Program_objects)
+/// that caches uniform locations.
 pub struct ShaderProgram {
-    pub id: u32,
+    id: u32,
+    locations: HashMap<String, i32>,
 }
 
 impl ShaderProgram {
@@ -119,7 +123,10 @@ impl ShaderProgram {
     pub fn new() -> Option<Self> {
         let program_id = unsafe { gl::CreateProgram() };
         if program_id != 0 {
-            Some(Self { id: program_id })
+            Some(Self {
+                id: program_id,
+                locations: HashMap::new(),
+            })
         } else {
             None
         }
@@ -210,12 +217,12 @@ impl ShaderProgram {
         }
     }
 
-    /// Takes two paths and possibly a third containing shader code and compiles them
+    /// Takes two file paths and possibly a third containing shader code and compiles them
     /// into a ShaderProgram. If a problem occurs during this process an error is
     /// returned with a string that has information about the error.
     ///
-    /// This is the preferred way to create a simple shader program in the common
-    /// case. It's just less error prone than doing all the steps yourself.
+    /// This is the preferred way to create a shader program in most cases. It's just
+    /// less error prone than doing all the steps yourself.
     pub fn from_file(
         vert_path: &str,
         frag_path: &str,
@@ -223,16 +230,119 @@ impl ShaderProgram {
     ) -> Result<Self, String> {
         let vert_src = extract_source(vert_path)?;
         let frag_src = extract_source(frag_path)?;
-        match geom_path {
-            Some(path) => {
-                let geom_src = extract_source(path)?;
-                Self::from_source(&vert_src, &frag_src, Some(&geom_src))
-            }
-            None => Self::from_source(&vert_src, &frag_src, None),
+
+        if let Some(path) = geom_path {
+            let geom_src = extract_source(path)?;
+            Self::from_source(&vert_src, &frag_src, Some(&geom_src))
+        } else {
+            Self::from_source(&vert_src, &frag_src, None)
         }
     }
 
-    // pub fn SetUniform<T>(&self, name: &str, value: T) {}
+    /// Getter.
+    pub fn get_id(&self) -> u32 {
+        self.id
+    }
+
+    fn get_uniform_location(&mut self, name: &str) -> i32 {
+        match self.locations.get(name) {
+            Some(&location) => location,
+            None => {
+                let location = unsafe {
+                    gl::GetUniformLocation(self.id, name.as_bytes().as_ptr() as *const i8)
+                };
+                if location < 0 {
+                    error!("Failed to get location of uniform {}", name);
+                } else {
+                    self.locations.insert(name.to_string(), location);
+                }
+                location
+            }
+        }
+    }
+
+    /// Uploads a uniform to the current ShaderProgram
+    pub fn set_uniform_1i(&mut self, name: &str, value: i32) {
+        unsafe {
+            gl::Uniform1i(self.get_uniform_location(name), value);
+        }
+    }
+
+    /// Uploads a uniform to the current ShaderProgram
+    pub fn set_uniform_1i_arr(&mut self, name: &str, values: &[i32]) {
+        unsafe {
+            gl::Uniform1iv(
+                self.get_uniform_location(name),
+                values.len() as i32,
+                values.as_ptr() as *const i32,
+            );
+        }
+    }
+
+    /// Uploads a uniform to the current ShaderProgram
+    pub fn set_uniform_1f(&mut self, name: &str, value: f32) {
+        unsafe {
+            gl::Uniform1f(self.get_uniform_location(name), value);
+        }
+    }
+
+    /// Uploads a uniform to the current ShaderProgram
+    pub fn set_uniform_2f(&mut self, name: &str, v: Vec2) {
+        unsafe {
+            gl::Uniform2f(self.get_uniform_location(name), v.x, v.y);
+        }
+    }
+
+    /// Uploads a uniform to the current ShaderProgram
+    pub fn set_uniform_3f(&mut self, name: &str, v: Vec3) {
+        unsafe {
+            gl::Uniform3f(self.get_uniform_location(name), v.x, v.y, v.z);
+        }
+    }
+
+    /// Uploads a uniform to the current ShaderProgram
+    pub fn set_uniform_4f(&mut self, name: &str, v: Vec4) {
+        unsafe {
+            gl::Uniform4f(self.get_uniform_location(name), v.x, v.y, v.z, v.w);
+        }
+    }
+
+    /// Uploads a uniform to the current ShaderProgram
+    pub fn set_uniform_1f_arr(&mut self, name: &str, values: &[f32]) {
+        unsafe {
+            gl::Uniform1fv(
+                self.get_uniform_location(name),
+                values.len() as i32,
+                values.as_ptr() as *const f32,
+            );
+        }
+    }
+
+    /// Uploads a uniform to the current ShaderProgram
+    pub fn set_uniform_mat3(&mut self, name: &str, matrix: Mat3) {
+        let values = matrix.to_cols_array();
+        unsafe {
+            gl::UniformMatrix3fv(
+                self.get_uniform_location(name),
+                1,
+                0,
+                values.as_ptr() as *const f32,
+            );
+        }
+    }
+
+    /// Uploads a uniform to the current ShaderProgram
+    pub fn set_uniform_mat4(&mut self, name: &str, matrix: Mat4) {
+        let values = matrix.to_cols_array();
+        unsafe {
+            gl::UniformMatrix4fv(
+                self.get_uniform_location(name),
+                1,
+                0,
+                values.as_ptr() as *const f32,
+            );
+        }
+    }
 }
 
 fn extract_source(path: &str) -> Result<String, String> {
