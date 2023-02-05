@@ -8,7 +8,7 @@ use std::{collections::HashMap, fs};
 /// The types of shader.
 #[derive(Clone, Copy, Debug)]
 #[repr(u32)]
-enum ShaderType {
+pub enum ShaderType {
     Vertex = gl::VERTEX_SHADER,
     Fragment = gl::FRAGMENT_SHADER,
     Geometry = gl::GEOMETRY_SHADER,
@@ -16,7 +16,7 @@ enum ShaderType {
 
 /// A handle to a [Shader Object](https://www.khronos.org/opengl/wiki/GLSL_Object#Shader_objects).
 pub struct Shader {
-    pub id: u32,
+    id: u32,
 }
 
 impl Shader {
@@ -24,9 +24,10 @@ impl Shader {
     ///
     /// Prefer the [`Shader::from_source`](Shader::from_source) method.
     ///
-    /// Possibly skip the direct creation of the shader object and use
-    /// [`ShaderProgram::from_vert_frag`](ShaderProgram::from_vert_frag).
-    fn new(st: ShaderType) -> Option<Self> {
+    /// You probably want to skip the direct creation of the shader object and
+    /// use [`ShaderProgram::from_source`](ShaderProgram::from_source) or
+    /// [`ShaderProgram::from_file`](ShaderProgram::from_file) instead.
+    pub fn new(st: ShaderType) -> Option<Self> {
         let shader_id = unsafe { gl::CreateShader(st as u32) };
         if shader_id != 0 {
             Some(Self { id: shader_id })
@@ -38,7 +39,7 @@ impl Shader {
     /// Assigns a source string to the shader.
     ///
     /// Replaces any previously assigned source.
-    fn set_source(&self, src: &str) {
+    pub fn set_source(&self, src: &str) {
         unsafe {
             gl::ShaderSource(
                 self.id,
@@ -50,19 +51,19 @@ impl Shader {
     }
 
     /// Compiles the shader based on the assigned source.
-    fn compile(&self) {
+    pub fn compile(&self) {
         unsafe { gl::CompileShader(self.id) };
     }
 
     /// Checks if the last compile was successful or not.
-    fn is_successfully_compiled(&self) -> bool {
+    pub fn is_successfully_compiled(&self) -> bool {
         let mut compiled = 0;
         unsafe { gl::GetShaderiv(self.id, gl::COMPILE_STATUS, &mut compiled) };
         compiled == gl::TRUE as i32
     }
 
     /// Gets the info log for the shader.
-    fn get_info_log(&self) -> String {
+    pub fn get_info_log(&self) -> String {
         let mut buffer_len = 0;
         unsafe { gl::GetShaderiv(self.id, gl::INFO_LOG_LENGTH, &mut buffer_len) };
         let mut info_log: Vec<u8> = Vec::with_capacity(buffer_len as usize);
@@ -81,15 +82,16 @@ impl Shader {
 
     /// Marks a shader for deletion.
     ///
-    /// Note: This **does not** immediately delete the shader. It only marks it for
-    /// deletion. If the shader has been previously attached to a program then the
-    /// shader will stay allocated until it's unattached from that program.
-    fn delete(self) {
+    /// Note: This **does not** immediately delete the shader. It only marks it
+    /// for deletion. If the shader has been previously attached to a
+    /// program then the shader will stay allocated until it's unattached
+    /// from that program.
+    pub fn delete(self) {
         unsafe { gl::DeleteShader(self.id) };
     }
 
-    /// Creates and compiles a shader of the given type from source.
-    fn from_source(st: ShaderType, source: &str) -> Result<Self, String> {
+    /// Creates and compiles a shader of the given type from a source string.
+    pub fn from_source(st: ShaderType, source: &str) -> Result<Self, String> {
         let shader = Self::new(st).ok_or_else(|| String::from("Couldn't allocate new shader"))?;
         shader.set_source(source);
         shader.compile();
@@ -108,8 +110,7 @@ impl Shader {
     }
 }
 
-/// A handle to a [`Program Object`](https://www.khronos.org/opengl/wiki/GLSL_Object#Program_objects)
-/// that caches uniform locations.
+/// A handle to a [Program Object](https://www.khronos.org/opengl/wiki/GLSL_Object#Program_objects).
 pub struct ShaderProgram {
     id: u32,
     locations: HashMap<String, i32>,
@@ -118,8 +119,8 @@ pub struct ShaderProgram {
 impl ShaderProgram {
     /// Allocates a new program object.
     ///
-    /// Prefer [`ShaderProgram::from_vert_frag`](ShaderProgram::from_vert_frag),
-    /// it makes a complete program from the vertex and fragment sources.
+    /// Prefer [`ShaderProgram::from_file`](ShaderProgram::from_file),
+    /// it makes a complete program from GLSL source files.
     pub fn new() -> Option<Self> {
         let program_id = unsafe { gl::CreateProgram() };
         if program_id != 0 {
@@ -137,7 +138,8 @@ impl ShaderProgram {
         unsafe { gl::AttachShader(self.id, shader.id) };
     }
 
-    /// Links the various attached, compiled shader objects into a usable program.
+    /// Links the various attached, compiled shader objects into a usable
+    /// program.
     pub fn link(&self) {
         unsafe { gl::LinkProgram(self.id) };
     }
@@ -181,9 +183,10 @@ impl ShaderProgram {
 
     /// Marks the program for deletion.
     ///
-    /// Note: This **does not** immediately delete the program. If the program is
-    /// currently in use it won't be deleted until it's not the active program.
-    /// When a program is finally deleted and attached shaders are unattached.
+    /// Note: This **does not** immediately delete the program. If the program
+    /// is currently in use it won't be deleted until it's not the active
+    /// program. When a program is finally deleted and attached shaders are
+    /// unattached.
     pub fn delete(self) {
         unsafe { gl::DeleteProgram(self.id) };
     }
@@ -191,8 +194,9 @@ impl ShaderProgram {
     /// Takes a vertex shader source string and a fragment shader source string
     /// and either gets you a working program object or returns an error.
     ///
-    /// This is the preferred way to create a simple shader program in the common
-    /// case. It's just less error prone than doing all the steps yourself.
+    /// This is the preferred way to create a simple shader program in the
+    /// common case. It's just less error prone than doing all the steps
+    /// yourself.
     pub fn from_source(
         vert_src: &str,
         frag_src: &str,
@@ -217,12 +221,13 @@ impl ShaderProgram {
         }
     }
 
-    /// Takes two file paths and possibly a third containing shader code and compiles them
-    /// into a ShaderProgram. If a problem occurs during this process an error is
-    /// returned with a string that has information about the error.
+    /// Takes two file paths and possibly a third containing GLSL code and
+    /// compiles them into a ShaderProgram. If a problem occurs during this
+    /// process an error is returned with a string that has information
+    /// about the error.
     ///
-    /// This is the preferred way to create a shader program in most cases. It's just
-    /// less error prone than doing all the steps yourself.
+    /// This is the preferred way to create a shader program in most cases. It's
+    /// just less error prone than doing all the steps yourself.
     pub fn from_file(
         vert_path: &str,
         frag_path: &str,
@@ -244,6 +249,8 @@ impl ShaderProgram {
         self.id
     }
 
+    // TODO(Miguel): Fix bug. Uniform name does not have null terminator character when
+    // converted to *const i8.
     fn get_uniform_location(&mut self, name: &str) -> i32 {
         match self.locations.get(name) {
             Some(&location) => location,
@@ -257,7 +264,7 @@ impl ShaderProgram {
                     self.locations.insert(name.to_string(), location);
                 }
                 location
-            }
+            },
         }
     }
 

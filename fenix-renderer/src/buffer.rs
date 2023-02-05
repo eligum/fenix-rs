@@ -6,7 +6,8 @@ use gl;
 pub struct VertexArray(pub u32);
 
 impl VertexArray {
-    /// Creates a new vertex array object. If the operation fails `None` is returned.
+    /// Creates a new vertex array object. If the operation fails `None` is
+    /// returned.
     pub fn new() -> Option<Self> {
         let mut vao = 0;
         unsafe {

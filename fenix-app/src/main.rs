@@ -1,28 +1,32 @@
-// #![allow(unused_imports)]
-
-use core::ffi::c_void;
-use fenix_core::logging::setup_logging;
+use fenix_core::logging;
 use fenix_renderer::shader::ShaderProgram;
-use glfw::{Action, Context, Key};
-use log::{error, info, warn, LevelFilter};
+use glam::{Mat3, Mat4, Vec3};
+use glfw::{Action, Context, CursorMode, Key, OpenGlProfileHint, WindowHint};
+use log::{error, info, trace, warn, LevelFilter};
+use std::ffi::c_void;
 use std::mem::{size_of, size_of_val};
 
 fn main() {
-    setup_logging("fenix.log", LevelFilter::Info).expect("failed to initialize logging");
+    logging::setup("fenix.log", LevelFilter::Trace).expect("failed to initialize logging");
 
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
     info!("GLFW version: {:?}", glfw::get_version_string());
 
-    glfw.window_hint(glfw::WindowHint::ContextVersion(4, 5));
-    glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
-    glfw.window_hint(glfw::WindowHint::OpenGlProfile(
-        glfw::OpenGlProfileHint::Core,
-    ));
-    glfw.window_hint(glfw::WindowHint::Resizable(true));
+    glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
+    glfw.window_hint(WindowHint::ContextVersion(4, 5));
+    glfw.window_hint(WindowHint::OpenGlForwardCompat(true));
+    glfw.window_hint(WindowHint::Resizable(true));
+
+    #[cfg(debug_assertions)]
+    {
+        glfw.window_hint(WindowHint::OpenGlDebugContext(true));
+        warn!("Using an OpenGL debug context, GL operations will be significantly slower.");
+        warn!("If this is not intentional you should request a normal context.");
+    }
 
     let (mut window, events) = glfw
-        .create_window(1280, 720, "Fenix Editor", glfw::WindowMode::Windowed)
+        .create_window(1280, 720, "Fenix - Editor", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
 
     window.make_current();
@@ -81,8 +85,8 @@ fn main() {
     let mut vbo = 0;
 
     unsafe {
-        gl::GenVertexArrays(1, &mut vao);
-        gl::GenBuffers(1, &mut vbo);
+        gl::CreateVertexArrays(1, &mut vao);
+        gl::CreateBuffers(1, &mut vbo);
 
         gl::BindVertexArray(vao);
 
@@ -101,10 +105,11 @@ fn main() {
             3 * size_of::<f32>() as i32,
             0 as *const c_void,
         );
+
         gl::EnableVertexAttribArray(0);
     }
 
-    let program = ShaderProgram::from_file("assets/shader.vert", "assets/shader.frag", None)
+    let mut program = ShaderProgram::from_file("assets/shader.vert", "assets/shader.frag", None)
         .unwrap_or_else(|err| {
             error!("{}", err);
             warn!("Using empty ShaderProgram");
@@ -124,6 +129,15 @@ fn main() {
             handle_window_event(&mut window, event);
         }
 
+        let model = Mat4::from_translation(Vec3::new(0.0, 0.0, -1.0));
+        let view = Mat4::IDENTITY;
+        let projection = Mat4::perspective_rh(45.0, 16.0 / 9.0, 0.1, 10.0);
+
+        program.set_uniform_mat4("u_model", model);
+        program.set_uniform_mat4("u_view", view);
+        program.set_uniform_mat4("u_projection", projection);
+
+        // Draw frame to buffer
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
@@ -140,6 +154,14 @@ fn main() {
 fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
-        _ => {}
+        glfw::WindowEvent::Key(Key::Space, _, Action::Press, _) => {
+            trace!("Key SPACE pressed.");
+            match window.get_cursor_mode() {
+                CursorMode::Normal => window.set_cursor_mode(CursorMode::Disabled),
+                CursorMode::Disabled => window.set_cursor_mode(CursorMode::Normal),
+                _ => {},
+            }
+        },
+        _ => {},
     }
 }

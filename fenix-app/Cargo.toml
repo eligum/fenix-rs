@@ -1,7 +1,7 @@
 [package]
 name = "fenix-app"
 version = "0.1.0"
-description = "OpenGL based graphics framework."
+description = "3D rendering application"
 authors = ["Miguel García Soler"]
 edition = "2021"
 
@@ -13,11 +13,11 @@ path = "src/main.rs"
 fenix-core = { path = "../fenix-core" }
 fenix-renderer = { path = "../fenix-renderer" }
 
-gl = "0.6.0"        # OpenGL bindings
+glfw = "0.50.0"     # Window and OpenGL context
 glam = "0.22.0"     # Math library
-glfw = "0.45.0"     # Window and OpenGL context
-image = "0.24.5"    # Image parser
-chrono = "0.4.23"   # Date and time
-bytemuck = "1.12.3" # Type casts
+gl = "0.6.0"        # OpenGL bindings
 log = "0.4.17"      # Logging API
+# image = "0.24.5"    # Image parser
+# chrono = "0.4.23"   # Date and time
+# bytemuck = "1.12.3" # Type casts
 
