@@ -6,8 +6,8 @@ use fenix_renderer::{
 use glam::{Mat4, Vec3};
 use glfw::{Action, Context, CursorMode, Key, OpenGlProfileHint, WindowHint};
 use log::{error, info, trace, warn, LevelFilter};
-use std::ffi::c_void;
 use std::mem::size_of;
+use std::{ffi::c_void, ptr};
 
 fn main() {
     logging::setup("fenix.log", LevelFilter::Trace).expect("failed to initialize logging");
@@ -39,53 +39,34 @@ fn main() {
     gl::load_with(|s| window.get_proc_address(s) as *const c_void);
 
     #[rustfmt::skip]
-    const VERTICES: [f32; 108] = [
-        // back face
-        0.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        1.0, 1.0, 0.0,
-        0.0, 0.0, 0.0,
-        1.0, 1.0, 0.0,
-        1.0, 0.0, 0.0,
-        // right face
-        1.0, 0.0, 1.0,
-        1.0, 0.0, 0.0,
-        1.0, 1.0, 0.0,
-        1.0, 0.0, 1.0,
-        1.0, 1.0, 0.0,
-        1.0, 1.0, 1.0,
-        // front face
-        0.0, 0.0, 1.0,
-        1.0, 0.0, 1.0,
-        1.0, 1.0, 1.0,
-        0.0, 0.0, 1.0,
-        1.0, 1.0, 1.0,
-        0.0, 1.0, 1.0,
-        // left face
+    const VERTICES: [f32; 24] = [
         0.0, 0.0, 0.0,
         0.0, 0.0, 1.0,
-        0.0, 1.0, 1.0,
-        0.0, 0.0, 0.0,
-        0.0, 1.0, 1.0,
         0.0, 1.0, 0.0,
-        // top face
         0.0, 1.0, 1.0,
-        1.0, 1.0, 1.0,
-        1.0, 1.0, 0.0,
-        0.0, 1.0, 1.0,
-        1.0, 1.0, 0.0,
-        0.0, 1.0, 0.0,
-        // bottom face
-        0.0, 0.0, 0.0,
         1.0, 0.0, 0.0,
         1.0, 0.0, 1.0,
-        0.0, 0.0, 0.0,
-        1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0,
+        1.0, 1.0, 0.0,
+        1.0, 1.0, 1.0,
+    ];
+
+    #[rustfmt::skip]
+    const INDICES: [u32; 36] = [
+        1, 2, 3,
+        2, 4, 3,
+        2, 6, 4,
+        6, 8, 4,
+        6, 5, 8,
+        5, 7, 8,
+        5, 1, 7,
+        1, 3, 7,
+        4, 8, 3,
+        8, 7, 3,
+        1, 5, 2,
+        5, 6, 2,
     ];
 
     let mut vao = 0;
-
 
     unsafe {
         gl::GenVertexArrays(1, &mut vao);
@@ -94,6 +75,9 @@ fn main() {
 
     let vertex_buff = VertexBuffer::from(&VERTICES);
     vertex_buff.bind();
+
+    let index_buff = IndexBuffer::from(&INDICES);
+    index_buff.bind();
 
     unsafe {
         // gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
@@ -148,7 +132,12 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
             gl::BindVertexArray(vao);
-            gl::DrawArrays(gl::TRIANGLES, 0, VERTICES.len() as i32);
+            gl::DrawElements(
+                gl::TRIANGLES,
+                index_buff.get_count() as i32,
+                gl::UNSIGNED_INT,
+                ptr::null(),
+            );
             gl::BindVertexArray(0);
         }
 
