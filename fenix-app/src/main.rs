@@ -1,10 +1,13 @@
 use fenix_core::logging;
-use fenix_renderer::shader::ShaderProgram;
-use glam::{Mat3, Mat4, Vec3};
+use fenix_renderer::{
+    buffer::{IndexBuffer, VertexBuffer},
+    shader::ShaderProgram,
+};
+use glam::{Mat4, Vec3};
 use glfw::{Action, Context, CursorMode, Key, OpenGlProfileHint, WindowHint};
 use log::{error, info, trace, warn, LevelFilter};
 use std::ffi::c_void;
-use std::mem::{size_of, size_of_val};
+use std::mem::size_of;
 
 fn main() {
     logging::setup("fenix.log", LevelFilter::Trace).expect("failed to initialize logging");
@@ -36,7 +39,7 @@ fn main() {
     gl::load_with(|s| window.get_proc_address(s) as *const c_void);
 
     #[rustfmt::skip]
-    const VERTICES: &[f32] = &[
+    const VERTICES: [f32; 108] = [
         // back face
         0.0, 0.0, 0.0,
         0.0, 1.0, 0.0,
@@ -82,21 +85,24 @@ fn main() {
     ];
 
     let mut vao = 0;
-    let mut vbo = 0;
+
 
     unsafe {
-        gl::CreateVertexArrays(1, &mut vao);
-        gl::CreateBuffers(1, &mut vbo);
-
+        gl::GenVertexArrays(1, &mut vao);
         gl::BindVertexArray(vao);
+    }
 
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-        gl::BufferData(
-            gl::ARRAY_BUFFER,
-            size_of_val(VERTICES) as isize,
-            VERTICES.as_ptr() as *const c_void,
-            gl::STATIC_DRAW,
-        );
+    let vertex_buff = VertexBuffer::from(&VERTICES);
+    vertex_buff.bind();
+
+    unsafe {
+        // gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        // gl::BufferData(
+        //     gl::ARRAY_BUFFER,
+        //     size_of_val(VERTICES) as isize,
+        //     VERTICES.as_ptr() as *const c_void,
+        //     gl::STATIC_DRAW,
+        // );
         gl::VertexAttribPointer(
             0,
             3,
@@ -129,7 +135,7 @@ fn main() {
             handle_window_event(&mut window, event);
         }
 
-        let model = Mat4::from_translation(Vec3::new(0.0, 0.0, -1.0));
+        let model = Mat4::from_translation(Vec3::new(-0.5, -0.5, -3.0));
         let view = Mat4::IDENTITY;
         let projection = Mat4::perspective_rh(45.0, 16.0 / 9.0, 0.1, 10.0);
 

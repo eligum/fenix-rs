@@ -1,70 +1,111 @@
 //! TODO: Add module documentation when this project grows.
 
-use gl;
+use std::ops::Drop;
+use std::{ffi::c_void, mem, ptr};
 
-/// Basic wrapper for a [Vertex Array Object](https://www.khronos.org/opengl/wiki/Vertex_Specification#Vertex_Array_Object).
-pub struct VertexArray(pub u32);
+/// Struct representing a [Buffer Object](https://www.khronos.org/opengl/wiki/Buffer_Object)
+/// that stores vertex data.
+pub struct VertexBuffer {
+    id: u32,
+}
 
-impl VertexArray {
-    /// Creates a new vertex array object. If the operation fails `None` is
-    /// returned.
-    pub fn new() -> Option<Self> {
-        let mut vao = 0;
+impl VertexBuffer {
+    /// Creates a new vertex buffer and fills it with the given data.
+    pub fn from(data: &[f32]) -> Self {
+        let mut id = 0;
         unsafe {
-            gl::GenVertexArrays(1, &mut vao);
+            // NOTE(Miguel): We use DSA https://www.khronos.org/opengl/wiki/Direct_State_Access
+            // to create and fill the buffer.
+            gl::CreateBuffers(1, &mut id);
+            gl::NamedBufferData(
+                id,
+                mem::size_of_val(data) as isize,
+                data.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            );
         }
-        if vao != 0 {
-            Some(Self(vao))
-        } else {
-            None
-        }
+        Self { id }
     }
 
-    /// Binds this vertex array as the current vertex array object.
+    /// Creates a new vertex buffer of the specified size (in bytes).
+    pub fn with_size(size: u32) -> Self {
+        let mut id = 0;
+        unsafe {
+            gl::GenBuffers(1, &mut id);
+            gl::BindBuffer(gl::ARRAY_BUFFER, id);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                size as isize,
+                ptr::null(),
+                gl::DYNAMIC_DRAW,
+            );
+        }
+        Self { id }
+    }
+
+    /// Fills the buffer with vertex data.
+    pub fn set_data() {
+        todo!();
+    }
+
+    /// Binds this buffer to the target `ARRAY_BUFFER`.
     pub fn bind(&self) {
-        unsafe { gl::BindVertexArray(self.0) };
+        unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, self.id) };
     }
 
-    /// Unbinds the current vertex array object.
+    /// Unbinds any buffer bound to the `ELEMENT_ARRAY_BUFFER` target.
     pub fn unbind() {
-        unsafe { gl::BindVertexArray(0) };
+        unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, 0) };
     }
 }
 
-/// The types of buffer object that you can have.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[repr(u32)]
-pub enum BufferType {
-    /// Vertex Buffer holds arrays of vertex data for drawing.
-    Vertex = gl::ARRAY_BUFFER,
-    /// Index Buffer holds indices of what vertices to use for drawing.
-    Index = gl::ELEMENT_ARRAY_BUFFER,
+impl Drop for VertexBuffer {
+    fn drop(&mut self) {
+        unsafe { gl::DeleteBuffers(1, &self.id) };
+    }
 }
 
-/// Basic wrapper for a [Buffer Object](https://www.khronos.org/opengl/wiki/Buffer_Object).
-pub struct Buffer(pub u32);
+/// Struct representing a [Buffer Object](https://www.khronos.org/opengl/wiki/Buffer_Object)
+/// that stores vertex indices.
+pub struct IndexBuffer {
+    id: u32,
+    count: usize,
+}
 
-impl Buffer {
-    /// Creates a new vertex buffer.
-    pub fn new() -> Option<Self> {
-        let mut vbo = 0;
+impl IndexBuffer {
+    /// Creates a new index buffer and fills it with the given data.
+    pub fn from(indices: &[u32]) -> Self {
+        let mut id = 0;
         unsafe {
-            gl::GenBuffers(1, &mut vbo);
+            gl::CreateBuffers(1, &mut id);
+            gl::NamedBufferData(
+                id,
+                mem::size_of_val(indices) as isize,
+                indices.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            );
         }
-        if vbo != 0 {
-            Some(Self(vbo))
-        } else {
-            None
-        }
+        Self { id, count: indices.len() }
     }
 
-    /// Binds this buffer as the current buffer for the given type.
-    pub fn bind(&self, bt: BufferType) {
-        unsafe { gl::BindBuffer(bt as u32, self.0) };
+    /// Returns the number (count) of indices in the buffer.
+    pub fn get_count(&self) -> usize {
+        self.count
     }
 
-    /// Unbinds the current buffer for the given type.
-    pub fn unbind(bt: BufferType) {
-        unsafe { gl::BindBuffer(bt as u32, 0) };
+    /// Binds this buffer to the target `ELEMENT_ARRAY_BUFFER`.
+    pub fn bind(&self) {
+        unsafe { gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.id) };
+    }
+
+    /// Unbinds any buffer bound to the `ELEMENT_ARRAY_BUFFER` target.
+    pub fn unbind() {
+        unsafe { gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0) };
+    }
+}
+
+impl Drop for IndexBuffer {
+    fn drop(&mut self) {
+        unsafe { gl::DeleteBuffers(1, &self.id) };
     }
 }

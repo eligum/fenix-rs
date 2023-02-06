@@ -1,4 +1,4 @@
-comment_width = 80
+comment_width = 90
 edition = "2021"
 match_block_trailing_comma = true
 max_width = 100
