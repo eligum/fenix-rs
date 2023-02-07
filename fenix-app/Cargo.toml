@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 fenix-core = { path = "../fenix-core" }
+fenix-utils = { path = "../fenix-utils" }
 fenix-renderer = { path = "../fenix-renderer" }
 
 glfw = "0.50.0"     # Window and OpenGL context

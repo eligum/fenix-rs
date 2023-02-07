@@ -1,7 +1,7 @@
 use fenix_core::logging;
+use fenix_utils::math;
 use fenix_renderer::{
     buffer::{IndexBuffer, VertexBuffer},
-    math,
     shader::ShaderProgram, texture::Texture2D,
 };
 use glam::{Mat4, Vec3};
@@ -41,34 +41,6 @@ fn main() {
 
     // Load OpenGL function pointers
     gl::load_with(|s| window.get_proc_address(s) as *const c_void);
-
-    // #[rustfmt::skip]
-    // const VERTICES: [f32; 24] = [
-    //     0.0, 0.0, 0.0,
-    //     0.0, 0.0, 1.0,
-    //     0.0, 1.0, 0.0,
-    //     0.0, 1.0, 1.0,
-    //     1.0, 0.0, 0.0,
-    //     1.0, 0.0, 1.0,
-    //     1.0, 1.0, 0.0,
-    //     1.0, 1.0, 1.0,
-    // ];
-
-    // #[rustfmt::skip]
-    // const INDICES: [u32; 36] = [
-    //     1, 2, 3,
-    //     2, 4, 3,
-    //     2, 6, 4,
-    //     6, 8, 4,
-    //     6, 5, 8,
-    //     5, 7, 8,
-    //     5, 1, 7,
-    //     1, 3, 7,
-    //     4, 8, 3,
-    //     8, 7, 3,
-    //     1, 5, 2,
-    //     5, 6, 2,
-    // ];
 
     let container_tex = Texture2D::from_file("assets/image/container.jpg").unwrap();
     let awesome_tex = Texture2D::from_file("assets/image/awesomeface.png").unwrap();

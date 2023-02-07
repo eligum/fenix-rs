@@ -269,6 +269,7 @@ version = "0.1.0"
 dependencies = [
  "fenix-core",
  "fenix-renderer",
+ "fenix-utils",
  "gl",
  "glam",
  "glfw",
@@ -289,11 +290,16 @@ name = "fenix-renderer"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "fenix-utils",
  "gl",
  "glam",
  "image",
  "log 0.4.17",
 ]
+
+[[package]]
+name = "fenix-utils"
+version = "0.1.0"
 
 [[package]]
 name = "fern"
