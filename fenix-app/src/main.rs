@@ -1,7 +1,8 @@
 use fenix_core::logging;
 use fenix_renderer::{
     buffer::{IndexBuffer, VertexBuffer},
-    shader::ShaderProgram,
+    math,
+    shader::ShaderProgram, texture::Texture2D,
 };
 use glam::{Mat4, Vec3};
 use glfw::{Action, Context, CursorMode, Key, OpenGlProfileHint, WindowHint};
@@ -35,35 +36,55 @@ fn main() {
     window.make_current();
     window.set_key_polling(true);
 
+    // Set v-sync
+    glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
+
     // Load OpenGL function pointers
     gl::load_with(|s| window.get_proc_address(s) as *const c_void);
 
+    // #[rustfmt::skip]
+    // const VERTICES: [f32; 24] = [
+    //     0.0, 0.0, 0.0,
+    //     0.0, 0.0, 1.0,
+    //     0.0, 1.0, 0.0,
+    //     0.0, 1.0, 1.0,
+    //     1.0, 0.0, 0.0,
+    //     1.0, 0.0, 1.0,
+    //     1.0, 1.0, 0.0,
+    //     1.0, 1.0, 1.0,
+    // ];
+
+    // #[rustfmt::skip]
+    // const INDICES: [u32; 36] = [
+    //     1, 2, 3,
+    //     2, 4, 3,
+    //     2, 6, 4,
+    //     6, 8, 4,
+    //     6, 5, 8,
+    //     5, 7, 8,
+    //     5, 1, 7,
+    //     1, 3, 7,
+    //     4, 8, 3,
+    //     8, 7, 3,
+    //     1, 5, 2,
+    //     5, 6, 2,
+    // ];
+
+    let container_tex = Texture2D::from_file("assets/image/container.jpg").unwrap();
+    let awesome_tex = Texture2D::from_file("assets/image/awesomeface.png").unwrap();
+
     #[rustfmt::skip]
-    const VERTICES: [f32; 24] = [
-        0.0, 0.0, 0.0,
-        0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0,
-        0.0, 1.0, 1.0,
-        1.0, 0.0, 0.0,
-        1.0, 0.0, 1.0,
-        1.0, 1.0, 0.0,
-        1.0, 1.0, 1.0,
+    const VERTICES: [f32; 5 * 4] = [
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        1.0, 0.0, 0.0, 1.0, 0.0,
+        1.0, 1.0, 0.0, 1.0, 1.0,
+        0.0, 1.0, 0.0, 0.0, 1.0,
     ];
 
     #[rustfmt::skip]
-    const INDICES: [u32; 36] = [
-        1, 2, 3,
-        2, 4, 3,
-        2, 6, 4,
-        6, 8, 4,
-        6, 5, 8,
-        5, 7, 8,
-        5, 1, 7,
-        1, 3, 7,
-        4, 8, 3,
-        8, 7, 3,
-        1, 5, 2,
-        5, 6, 2,
+    const INDICES: [u32; 3 * 2] = [
+        0, 1, 2,
+        0, 2, 3,
     ];
 
     let mut vao = 0;
@@ -80,23 +101,25 @@ fn main() {
     index_buff.bind();
 
     unsafe {
-        // gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-        // gl::BufferData(
-        //     gl::ARRAY_BUFFER,
-        //     size_of_val(VERTICES) as isize,
-        //     VERTICES.as_ptr() as *const c_void,
-        //     gl::STATIC_DRAW,
-        // );
+        gl::EnableVertexAttribArray(0);
         gl::VertexAttribPointer(
             0,
             3,
             gl::FLOAT,
             gl::FALSE,
-            3 * size_of::<f32>() as i32,
+            5 * size_of::<f32>() as i32,
             0 as *const c_void,
         );
 
-        gl::EnableVertexAttribArray(0);
+        gl::EnableVertexAttribArray(3);
+        gl::VertexAttribPointer(
+            3,
+            2,
+            gl::FLOAT,
+            gl::FALSE,
+            5 * size_of::<f32>() as i32,
+            (3 * size_of::<f32>()) as *const c_void,
+        );
     }
 
     let mut program = ShaderProgram::from_file("assets/shader.vert", "assets/shader.frag", None)
@@ -119,13 +142,23 @@ fn main() {
             handle_window_event(&mut window, event);
         }
 
-        let model = Mat4::from_translation(Vec3::new(-0.5, -0.5, -3.0));
-        let view = Mat4::IDENTITY;
+        let model = Mat4::from_translation(Vec3::new(-0.5, -0.5, -0.5));
+        let view = Mat4::from_translation(Vec3::new(0.0, 0.0, -3.0))
+            * Mat4::from_axis_angle(
+                Vec3::new(-1.0, 1.0, -1.0).try_normalize().unwrap(),
+                math::radians(30.0),
+            );
         let projection = Mat4::perspective_rh(45.0, 16.0 / 9.0, 0.1, 10.0);
 
         program.set_uniform_mat4("u_model", model);
         program.set_uniform_mat4("u_view", view);
         program.set_uniform_mat4("u_projection", projection);
+
+        container_tex.bind(0);
+        awesome_tex.bind(1);
+
+        program.set_uniform_1i("color_map0", 0);
+        program.set_uniform_1i("color_map1", 1);
 
         // Draw frame to buffer
         unsafe {

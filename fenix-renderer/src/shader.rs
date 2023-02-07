@@ -2,7 +2,6 @@
 
 use gl;
 use glam::{Mat3, Mat4, Vec2, Vec3, Vec4};
-use log::error;
 use std::{collections::HashMap, fs, ffi::CString};
 
 /// The types of shader.
@@ -249,8 +248,6 @@ impl ShaderProgram {
         self.id
     }
 
-    // TODO(Miguel): Fix bug. Uniform name does not have null terminator character when
-    // converted to *const i8.
     fn get_uniform_location(&mut self, name: &str) -> i32 {
         let name_cstr = CString::new(name).unwrap();
         match self.locations.get(name) {
@@ -260,7 +257,7 @@ impl ShaderProgram {
                     gl::GetUniformLocation(self.id, name_cstr.as_ptr())
                 };
                 if location < 0 {
-                    error!("Failed to get location of uniform {}", name);
+                    panic!("Failed to get location of uniform '{}'", name);
                 } else {
                     self.locations.insert(name.to_string(), location);
                 }
