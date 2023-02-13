@@ -122,9 +122,9 @@ fn main() {
             );
         let projection = Mat4::perspective_rh(45.0, 16.0 / 9.0, 0.1, 10.0);
 
-        program.set_uniform_mat4("u_model", model);
-        program.set_uniform_mat4("u_view", view);
-        program.set_uniform_mat4("u_projection", projection);
+        program.set_uniform_mat4("u_model", &model);
+        program.set_uniform_mat4("u_view", &view);
+        program.set_uniform_mat4("u_projection", &projection);
 
         container_tex.bind(0);
         awesome_tex.bind(1);

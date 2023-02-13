@@ -300,6 +300,10 @@ dependencies = [
 [[package]]
 name = "fenix-utils"
 version = "0.1.0"
+dependencies = [
+ "glam",
+ "log 0.4.17",
+]
 
 [[package]]
 name = "fern"

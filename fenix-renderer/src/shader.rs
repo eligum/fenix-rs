@@ -279,72 +279,74 @@ impl ShaderProgram {
             gl::Uniform1iv(
                 self.get_uniform_location(name),
                 values.len() as i32,
-                values.as_ptr() as *const i32,
+                values.as_ptr(),
             );
         }
     }
 
-    /// Uploads a uniform to the current ShaderProgram
+    /// Uploads a uniform to the current ShaderProgram.
     pub fn set_uniform_1f(&mut self, name: &str, value: f32) {
         unsafe {
             gl::Uniform1f(self.get_uniform_location(name), value);
         }
     }
 
-    /// Uploads a uniform to the current ShaderProgram
+    /// Uploads a uniform to the current ShaderProgram.
     pub fn set_uniform_2f(&mut self, name: &str, v: Vec2) {
         unsafe {
             gl::Uniform2f(self.get_uniform_location(name), v.x, v.y);
         }
     }
 
-    /// Uploads a uniform to the current ShaderProgram
+    /// Uploads a uniform to the current ShaderProgram.
     pub fn set_uniform_3f(&mut self, name: &str, v: Vec3) {
         unsafe {
             gl::Uniform3f(self.get_uniform_location(name), v.x, v.y, v.z);
         }
     }
 
-    /// Uploads a uniform to the current ShaderProgram
+    /// Uploads a uniform to the current ShaderProgram.
     pub fn set_uniform_4f(&mut self, name: &str, v: Vec4) {
         unsafe {
             gl::Uniform4f(self.get_uniform_location(name), v.x, v.y, v.z, v.w);
         }
     }
 
-    /// Uploads a uniform to the current ShaderProgram
+    /// Uploads a uniform to the current ShaderProgram.
     pub fn set_uniform_1f_arr(&mut self, name: &str, values: &[f32]) {
         unsafe {
             gl::Uniform1fv(
                 self.get_uniform_location(name),
                 values.len() as i32,
-                values.as_ptr() as *const f32,
+                values.as_ptr(),
             );
         }
     }
 
-    /// Uploads a uniform to the current ShaderProgram
-    pub fn set_uniform_mat3(&mut self, name: &str, matrix: Mat3) {
-        let values = matrix.to_cols_array();
+    /// Uploads a uniform to the currently bound `ShaderProgram`.
+    /// `GLSL`'s matrix data type is column-major.
+    pub fn set_uniform_mat3(&mut self, name: &str, matrix: &Mat3) {
         unsafe {
             gl::UniformMatrix3fv(
                 self.get_uniform_location(name),
                 1,
-                0,
-                values.as_ptr() as *const f32,
+                gl::FALSE,
+                (matrix as *const Mat3) as *const f32,
             );
         }
     }
 
-    /// Uploads a uniform to the current ShaderProgram
-    pub fn set_uniform_mat4(&mut self, name: &str, matrix: Mat4) {
-        let values = matrix.to_cols_array();
+    /// Uploads a uniform to the currently bound `ShaderProgram`.
+    /// `GLSL`'s matrix data type is column-major.
+    pub fn set_uniform_mat4(&mut self, name: &str, matrix: &Mat4) {
+        // NOTE(Miguel): The `glam` crate stores matrices in column-major order, just how
+        // OpenGL expects them, so no further transformations are needed.
         unsafe {
             gl::UniformMatrix4fv(
                 self.get_uniform_location(name),
                 1,
-                0,
-                values.as_ptr() as *const f32,
+                gl::FALSE,
+                (matrix as *const Mat4) as *const f32,
             );
         }
     }
